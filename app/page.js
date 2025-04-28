@@ -47,7 +47,7 @@ export default function Home() {
           <h2 className="text-4xl font-bold text-center mb-16">How It Works</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {howItWorksData.map((step, index) => (
-              <div key={step} className="text-center">
+              <div key={index} className="text-center">
                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">{step.icon}</div>
                 <h3 className="text-xl font-semibold mb-4">{step.title}</h3>
                 <p className="text-gray-600">{step.description}</p>
