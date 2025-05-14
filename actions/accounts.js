@@ -31,19 +31,19 @@ export async function updateDefaultAccount(accountId) {
         }
 
         await db.account.updateMany({
-            where: { userId:user.id , isDefault: true},
-            data: {isDefault: false},
+            where: { userId: user.id, isDefault: true },
+            data: { isDefault: false },
         })
 
         const account = await db.account.update({
             where: {
-                id: accountId, 
+                id: accountId,
                 userId: user.id,
             },
             data: { isDefault: true },
         });
 
-        revalidatePath('/dashboard'); 
+        revalidatePath('/dashboard');
         return { success: true, data: serializeTransaction(account) };
 
     } catch (error) {
@@ -53,6 +53,39 @@ export async function updateDefaultAccount(accountId) {
 
 export async function getAccountWithTransactions(accountId) {
     const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
+
+    const user = await db.user.findUnique({
+        where: { clerkUserId: userId },
+    });
+
+    if (!user) {
+        throw new Error("user not found.")
+    }
+
+    const accountdata = await db.account.findUnique({
+        where: { id: accountId, userId: user.id },
+        include: {
+            transactions: {
+                orderBy: { date: "desc" }
+            },
+            _count: {
+                select: { transactions: true }
+            }
+        }
+    })
+
+    if (!accountdata) return null;
+
+    return {
+        ...serializeTransaction(accountdata),
+        transactions: accountdata.transactions.map(serializeTransaction),
+    }
+}
+
+export async function bulkDeleteTrasactions(transactionIds) {
+    try {
+        const { userId } = await auth();
         if (!userId) throw new Error("Unauthorized");
 
         const user = await db.user.findUnique({
@@ -60,25 +93,57 @@ export async function getAccountWithTransactions(accountId) {
         });
 
         if (!user) {
-            throw new Error("user not found.")
+            throw new Error("User not found");
         }
 
-        const accountdata = await db.account.findUnique({
-            where: { id: accountId, userId: user.id},
-            include: {
-                transactions: {
-                    orderBy: { date: "desc" }
+        // Get transactions to calculate balance changes
+        const transactions = await db.transaction.findMany({
+            where: {
+                id: { in: transactionIds },
+                userId: user.id,
+            },
+        });
+
+        // Group transactions by account to update balances
+        const accountBalanceChanges = transactions.reduce((acc, transaction) => {
+            const change =
+                transaction.type === "EXPENSE"
+                    ? transaction.amount
+                    : -transaction.amount;
+            acc[transaction.accountId] = (acc[transaction.accountId] || 0) + change;
+            return acc;
+        }, {});
+
+        // Delete transactions and update account balances in a transaction
+        await db.$transaction(async (tx) => {
+            // Delete transactions
+            await tx.transaction.deleteMany({
+                where: {
+                    id: { in: transactionIds },
+                    userId: user.id,
                 },
-                _count: {
-                    select: { transactions: true }
-                }
+            });
+
+            // Update account balances
+            for (const [accountId, balanceChange] of Object.entries(
+                accountBalanceChanges
+            )) {
+                await tx.account.update({
+                    where: { id: accountId },
+                    data: {
+                        balance: {
+                            increment: balanceChange,
+                        },
+                    },
+                });
             }
-        })
+        });
 
-        if(!accountdata) return null;
+        revalidatePath("/dashboard");
+        revalidatePath("/account/[id]");
 
-        return {
-            ...serializeTransaction(accountdata),
-            transactions: accountdata.transactions.map(serializeTransaction),
-        }
+        return { success: true };
+    } catch (error) {
+
+    }
 }
