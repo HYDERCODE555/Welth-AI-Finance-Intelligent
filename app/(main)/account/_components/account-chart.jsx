@@ -70,7 +70,6 @@ const AccountChart = ({ transactions }) => {
         );
     }, [filteredData]);
 
-    console.log(filteredData)
     return (
         <div>
             <Card >
