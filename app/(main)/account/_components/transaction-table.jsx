@@ -354,11 +354,11 @@ const TransactionTable = ({ transactions }) => {
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent>
-                                            <DropdownMenuLabel onClick = {()=> 
-                                                router.push(`/trasaction/create?edit=${transaction.id}`)}>Edit
+                                            <DropdownMenuLabel  className="cursor-pointer" onClick = {()=> 
+                                                router.push(`/transaction/create?edit=${transaction.id}`)}>Edit
                                             </DropdownMenuLabel>
                                             <DropdownMenuSeparator />
-                                            <DropdownMenuItem className="text-destructive" onClick= {()=> deleteFn([transaction.id])}>Delete</DropdownMenuItem>
+                                            <DropdownMenuItem className="text-destructive cursor-pointer"  onClick= {()=> deleteFn([transaction.id])}>Delete</DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
 
