@@ -144,6 +144,6 @@ export async function bulkDeleteTrasactions(transactionIds) {
 
         return { success: true };
     } catch (error) {
-
+        return { success: false , error: error.message }
     }
 }

@@ -37,7 +37,7 @@ export async function createTransaction(data) {
       throw new Error("Account not found");
     }
 
-    const balanceChange = data.type === "EXPENSES" ? -data.amount : data.amount;
+    const balanceChange = data.type === "EXPENSE" ? -data.amount : data.amount;
     const newBalance = account.balance.toNumber() + balanceChange;
 
     const transaction = await db.$transaction(async (tx) => {
